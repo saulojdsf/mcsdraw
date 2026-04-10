@@ -42,6 +42,9 @@ function genId() {
   return `node_${nodeIdCounter++}`;
 }
 
+// Module-level clipboard — survives navigation between diagram levels
+let sharedClipboard: { nodes: Node[]; edges: Edge[] } | null = null;
+
 function download(dataUrl: string, filename: string) {
   const a = document.createElement('a');
   a.href = dataUrl;
@@ -63,14 +66,100 @@ function Canvas({
   onCreateChildDiagram,
   onExportReady,
 }: DiagramCanvasProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(diagram.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(diagram.edges);
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState(diagram.nodes);
+  const [edges, setEdges, onEdgesChangeBase] = useEdgesState(diagram.edges);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [editingEdge, setEditingEdge] = useState<Edge | null>(null);
   const [snapEnabled, setSnapEnabled] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, fitView } = useReactFlow();
+
+  // Undo history
+  const history = useRef<{ nodes: Node[]; edges: Edge[] }[]>([]);
+  const isDragging = useRef(false);
+
+  const pushHistory = useCallback(() => {
+    history.current = [...history.current.slice(-49), { nodes, edges }];
+  }, [nodes, edges]);
+
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      type PosChange = { type: string; dragging?: boolean };
+      const hasRemove = changes.some(c => c.type === 'remove');
+      const hasDragStart = changes.some(c => c.type === 'position' && (c as PosChange).dragging === true && !isDragging.current);
+      const hasDragEnd = changes.some(c => c.type === 'position' && (c as PosChange).dragging === false && isDragging.current);
+      if (hasRemove || hasDragStart) {
+        history.current = [...history.current.slice(-49), { nodes, edges }];
+      }
+      if (hasDragStart) isDragging.current = true;
+      if (hasDragEnd) isDragging.current = false;
+      onNodesChangeBase(changes);
+    },
+    [onNodesChangeBase, nodes, edges]
+  );
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      if (changes.some(c => c.type === 'remove')) {
+        history.current = [...history.current.slice(-49), { nodes, edges }];
+      }
+      onEdgesChangeBase(changes);
+    },
+    [onEdgesChangeBase, nodes, edges]
+  );
+
+  const handleUndo = useCallback(() => {
+    if (history.current.length === 0) return;
+    const prev = history.current[history.current.length - 1];
+    history.current = history.current.slice(0, -1);
+    setNodes(prev.nodes);
+    setEdges(prev.edges);
+  }, [setNodes, setEdges]);
+
+  const handleCopy = useCallback(() => {
+    const sel = nodes.filter(n => n.selected);
+    if (sel.length === 0) return;
+    const selIds = new Set(sel.map(n => n.id));
+    sharedClipboard = { nodes: sel, edges: edges.filter(e => selIds.has(e.source) && selIds.has(e.target)) };
+  }, [nodes, edges]);
+
+  const handlePaste = useCallback(() => {
+    if (!sharedClipboard) return;
+    pushHistory();
+    const { nodes: clipNodes, edges: clipEdges } = sharedClipboard;
+    const idMap = new Map<string, string>();
+    const newNodes: Node[] = clipNodes.map(n => {
+      const newId = genId();
+      idMap.set(n.id, newId);
+      let data = { ...(n.data as Record<string, unknown>) };
+      if (n.type === 'moduleNode') {
+        const childId = `diagram_${newId}`;
+        data = { ...data, childDiagramId: childId };
+        onCreateChildDiagram(childId);
+      }
+      return { ...n, id: newId, position: { x: n.position.x + 20, y: n.position.y + 20 }, selected: true, data };
+    });
+    const newEdges: Edge[] = clipEdges.map(e => ({
+      ...e,
+      id: genId(),
+      source: idMap.get(e.source) ?? e.source,
+      target: idMap.get(e.target) ?? e.target,
+      selected: false,
+    }));
+    setNodes(nds => [...nds.map(n => ({ ...n, selected: false })), ...newNodes]);
+    setEdges(eds => [...eds, ...newEdges]);
+  }, [pushHistory, setNodes, setEdges, onCreateChildDiagram]);
+
+  const handleCut = useCallback(() => {
+    const sel = nodes.filter(n => n.selected);
+    if (sel.length === 0) return;
+    const selIds = new Set(sel.map(n => n.id));
+    sharedClipboard = { nodes: sel, edges: edges.filter(e => selIds.has(e.source) && selIds.has(e.target)) };
+    pushHistory();
+    setNodes(nds => nds.filter(n => !selIds.has(n.id)));
+    setEdges(eds => eds.filter(e => !selIds.has(e.source) && !selIds.has(e.target)));
+  }, [nodes, edges, pushHistory, setNodes, setEdges]);
 
   // Expose export function to parent
   useEffect(() => {
@@ -103,6 +192,7 @@ function Canvas({
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      pushHistory();
       setEdges((eds) =>
         addEdge({
           ...connection,
@@ -113,7 +203,7 @@ function Canvas({
         }, eds)
       );
     },
-    [setEdges]
+    [setEdges, pushHistory]
   );
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -126,6 +216,7 @@ function Canvas({
       e.preventDefault();
       const type = e.dataTransfer.getData('application/reactflow/type') as BlockNodeType;
       if (!type) return;
+      pushHistory();
 
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
       const id = genId();
@@ -148,7 +239,7 @@ function Canvas({
 
       setNodes((nds) => [...nds, { id, type, position, data, ...extraProps }]);
     },
-    [screenToFlowPosition, setNodes, onCreateChildDiagram]
+    [screenToFlowPosition, setNodes, onCreateChildDiagram, pushHistory]
   );
 
   const onNodeDoubleClick: NodeMouseHandler = useCallback(
@@ -190,18 +281,20 @@ function Canvas({
 
   const handleSaveEdit = useCallback(
     (id: string, newData: Record<string, unknown>) => {
+      pushHistory();
       setNodes((nds) => nds.map((n) => (n.id === id ? { ...n, data: newData } : n)));
     },
-    [setNodes]
+    [setNodes, pushHistory]
   );
 
   const handleSaveEdgeLabel = useCallback(
     (id: string, label: string) => {
+      pushHistory();
       setEdges((eds) =>
         eds.map((e) => e.id === id ? { ...e, data: { ...e.data, label: label || undefined } } : e)
       );
     },
-    [setEdges]
+    [setEdges, pushHistory]
   );
 
   const handleAlign = useCallback(
@@ -242,14 +335,22 @@ function Canvas({
     if (edge) setEditingEdge(edge);
   }, [edges]);
 
-  // Close context menu on Escape
+  // Keyboard shortcuts: Escape, Ctrl+Z/X/C/V
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setContextMenu(null);
+      if (e.key === 'Escape') { setContextMenu(null); return; }
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement as HTMLElement)?.isContentEditable;
+      if ((e.ctrlKey || e.metaKey) && !isEditing) {
+        if (e.key === 'z') { e.preventDefault(); handleUndo(); }
+        else if (e.key === 'c') { e.preventDefault(); handleCopy(); }
+        else if (e.key === 'x') { e.preventDefault(); handleCut(); }
+        else if (e.key === 'v') { e.preventDefault(); handlePaste(); }
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [handleUndo, handleCopy, handleCut, handlePaste]);
 
   return (
     <EdgeUpdateContext.Provider value={handleUpdateEdgeWaypoints}>

@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.react-flow__node {
+  border-radius: 4px;
+}
+
+/* Override default ReactFlow node styles */
+.react-flow__node-gainNode,
+.react-flow__node-integratorNode,
+.react-flow__node-derivativeNode,
+.react-flow__node-sumNode,
+.react-flow__node-transferFunctionNode,
+.react-flow__node-customTextNode,
+.react-flow__node-customLatexNode,
+.react-flow__node-moduleNode {
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}

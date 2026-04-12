@@ -249,6 +249,30 @@ export function EditModal({ node, onSave, onClose }: EditModalProps) {
         return (
           <>
             <Field label="Text Content" value={data.text as string ?? ''} onChange={(v) => set('text', v)} placeholder="Enter text..." multiline />
+            <div className="flex gap-3">
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Inputs</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={8}
+                  className="border border-slate-300 rounded px-2 py-1.5 text-sm"
+                  value={data.inputCount as number ?? 1}
+                  onChange={(e) => set('inputCount', Math.max(0, Math.min(8, parseInt(e.target.value) || 0)))}
+                />
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Outputs</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={8}
+                  className="border border-slate-300 rounded px-2 py-1.5 text-sm"
+                  value={data.outputCount as number ?? 1}
+                  onChange={(e) => set('outputCount', Math.max(0, Math.min(8, parseInt(e.target.value) || 0)))}
+                />
+              </div>
+            </div>
             <Field label="Label (optional)" value={data.label as string ?? ''} onChange={(v) => set('label', v)} />
           </>
         );
@@ -256,6 +280,7 @@ export function EditModal({ node, onSave, onClose }: EditModalProps) {
       case 'customLatexNode': {
         const formula = data.formula as string ?? '';
         const inputCount = data.inputCount as number ?? 1;
+        const outputCount = data.outputCount as number ?? 1;
         return (
           <>
             <Field label="LaTeX Formula" value={formula} onChange={(v) => set('formula', v)} placeholder="e.g. \frac{K}{s+a}" multiline />
@@ -263,16 +288,29 @@ export function EditModal({ node, onSave, onClose }: EditModalProps) {
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Preview</label>
               <LatexPreview formula={formula} />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Number of Inputs</label>
-              <input
-                type="number"
-                min={0}
-                max={8}
-                className="border border-slate-300 rounded px-2 py-1.5 text-sm"
-                value={inputCount}
-                onChange={(e) => set('inputCount', Math.max(0, Math.min(8, parseInt(e.target.value) || 0)))}
-              />
+            <div className="flex gap-3">
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Inputs</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={8}
+                  className="border border-slate-300 rounded px-2 py-1.5 text-sm"
+                  value={inputCount}
+                  onChange={(e) => set('inputCount', Math.max(0, Math.min(8, parseInt(e.target.value) || 0)))}
+                />
+              </div>
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Outputs</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={8}
+                  className="border border-slate-300 rounded px-2 py-1.5 text-sm"
+                  value={outputCount}
+                  onChange={(e) => set('outputCount', Math.max(0, Math.min(8, parseInt(e.target.value) || 0)))}
+                />
+              </div>
             </div>
             <Field label="Label (optional)" value={data.label as string ?? ''} onChange={(v) => set('label', v)} />
           </>

@@ -72,6 +72,8 @@ export interface TransferFunctionNodeData {
 export interface CustomTextNodeData {
   label: string;
   text: string;
+  inputCount: number;
+  outputCount: number;
   color?: string;
 }
 
@@ -79,6 +81,7 @@ export interface CustomLatexNodeData {
   label: string;
   formula: string;
   inputCount: number;
+  outputCount: number;
   color?: string;
 }
 
@@ -117,8 +120,8 @@ export const defaultNodeData: Record<BlockNodeType, Record<string, unknown>> = {
   multiplyNode: { label: '', roles: ['×', '×'] },
   divideNode: { label: '', roles: ['N', 'D'] },
   transferFunctionNode: { label: '', numerator: '1', denominator: 's+1' },
-  customTextNode: { label: '', text: 'Text' },
-  customLatexNode: { label: '', formula: '\\frac{1}{s}' },
+  customTextNode: { label: '', text: 'Text', inputCount: 1, outputCount: 1 },
+  customLatexNode: { label: '', formula: '\\frac{1}{s}', inputCount: 1, outputCount: 1 },
   moduleNode: { label: 'Module', childDiagramId: '', inputCount: 1, outputCount: 1 },
   switchNode: { label: '', text: '', inputCount: 2 },
   textLabelNode: { text: 'Label', fontSize: 14 },

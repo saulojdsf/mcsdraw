@@ -73,14 +73,17 @@ function Canvas({
   const [snapEnabled, setSnapEnabled] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const mouseScreenPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const { screenToFlowPosition, fitView } = useReactFlow();
 
-  // Undo history
+  // Undo/redo history
   const history = useRef<{ nodes: Node[]; edges: Edge[] }[]>([]);
+  const future = useRef<{ nodes: Node[]; edges: Edge[] }[]>([]);
   const isDragging = useRef(false);
 
   const pushHistory = useCallback(() => {
     history.current = [...history.current.slice(-49), { nodes, edges }];
+    future.current = [];
   }, [nodes, edges]);
 
   const onNodesChange = useCallback(
@@ -91,6 +94,7 @@ function Canvas({
       const hasDragEnd = changes.some(c => c.type === 'position' && (c as PosChange).dragging === false && isDragging.current);
       if (hasRemove || hasDragStart) {
         history.current = [...history.current.slice(-49), { nodes, edges }];
+        future.current = [];
       }
       if (hasDragStart) isDragging.current = true;
       if (hasDragEnd) isDragging.current = false;
@@ -103,6 +107,7 @@ function Canvas({
     (changes: EdgeChange[]) => {
       if (changes.some(c => c.type === 'remove')) {
         history.current = [...history.current.slice(-49), { nodes, edges }];
+        future.current = [];
       }
       onEdgesChangeBase(changes);
     },
@@ -112,10 +117,20 @@ function Canvas({
   const handleUndo = useCallback(() => {
     if (history.current.length === 0) return;
     const prev = history.current[history.current.length - 1];
+    future.current = [...future.current.slice(-49), { nodes, edges }];
     history.current = history.current.slice(0, -1);
     setNodes(prev.nodes);
     setEdges(prev.edges);
-  }, [setNodes, setEdges]);
+  }, [nodes, edges, setNodes, setEdges]);
+
+  const handleRedo = useCallback(() => {
+    if (future.current.length === 0) return;
+    const next = future.current[future.current.length - 1];
+    history.current = [...history.current.slice(-49), { nodes, edges }];
+    future.current = future.current.slice(0, -1);
+    setNodes(next.nodes);
+    setEdges(next.edges);
+  }, [nodes, edges, setNodes, setEdges]);
 
   const handleCopy = useCallback(() => {
     const sel = nodes.filter(n => n.selected);
@@ -128,6 +143,16 @@ function Canvas({
     if (!sharedClipboard) return;
     pushHistory();
     const { nodes: clipNodes, edges: clipEdges } = sharedClipboard;
+
+    // Compute bounding box center of copied nodes
+    const xs = clipNodes.map(n => n.position.x);
+    const ys = clipNodes.map(n => n.position.y);
+    const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const centerY = (Math.min(...ys) + Math.max(...ys)) / 2;
+
+    // Convert current mouse screen position to flow coordinates
+    const mouseFlow = screenToFlowPosition(mouseScreenPos.current);
+
     const idMap = new Map<string, string>();
     const newNodes: Node[] = clipNodes.map(n => {
       const newId = genId();
@@ -138,7 +163,11 @@ function Canvas({
         data = { ...data, childDiagramId: childId };
         onCreateChildDiagram(childId);
       }
-      return { ...n, id: newId, position: { x: n.position.x + 20, y: n.position.y + 20 }, selected: true, data };
+      const position = {
+        x: mouseFlow.x + (n.position.x - centerX),
+        y: mouseFlow.y + (n.position.y - centerY),
+      };
+      return { ...n, id: newId, position, selected: true, data };
     });
     const newEdges: Edge[] = clipEdges.map(e => ({
       ...e,
@@ -149,7 +178,7 @@ function Canvas({
     }));
     setNodes(nds => [...nds.map(n => ({ ...n, selected: false })), ...newNodes]);
     setEdges(eds => [...eds, ...newEdges]);
-  }, [pushHistory, setNodes, setEdges, onCreateChildDiagram]);
+  }, [pushHistory, setNodes, setEdges, onCreateChildDiagram, screenToFlowPosition]);
 
   const handleCut = useCallback(() => {
     const sel = nodes.filter(n => n.selected);
@@ -335,7 +364,7 @@ function Canvas({
     if (edge) setEditingEdge(edge);
   }, [edges]);
 
-  // Keyboard shortcuts: Escape, Ctrl+Z/X/C/V
+  // Keyboard shortcuts: Escape, Ctrl+Z/Y/X/C/V
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setContextMenu(null); return; }
@@ -343,6 +372,7 @@ function Canvas({
       const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement as HTMLElement)?.isContentEditable;
       if ((e.ctrlKey || e.metaKey) && !isEditing) {
         if (e.key === 'z') { e.preventDefault(); handleUndo(); }
+        else if (e.key === 'y') { e.preventDefault(); handleRedo(); }
         else if (e.key === 'c') { e.preventDefault(); handleCopy(); }
         else if (e.key === 'x') { e.preventDefault(); handleCut(); }
         else if (e.key === 'v') { e.preventDefault(); handlePaste(); }
@@ -350,7 +380,7 @@ function Canvas({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleUndo, handleCopy, handleCut, handlePaste]);
+  }, [handleUndo, handleRedo, handleCopy, handleCut, handlePaste]);
 
   return (
     <EdgeUpdateContext.Provider value={handleUpdateEdgeWaypoints}>
@@ -370,11 +400,12 @@ function Canvas({
           onNodeContextMenu={onNodeContextMenu}
           onEdgeContextMenu={onEdgeContextMenu}
           onPaneClick={onPaneClick}
+          onMouseMove={(e) => { mouseScreenPos.current = { x: e.clientX, y: e.clientY }; }}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           deleteKeyCode="Delete"
           snapToGrid={snapEnabled}
-          snapGrid={[20, 20]}
+          snapGrid={[10, 10]}
           fitView
           fitViewOptions={{ padding: 0.2 }}
           defaultEdgeOptions={{
@@ -385,7 +416,7 @@ function Canvas({
           }}
           attributionPosition="bottom-right"
         >
-          <Background color="#e2e8f0" gap={20} />
+          <Background color="#e2e8f0" gap={10} />
           <Controls />
           <MiniMap
             nodeColor={(n) => {

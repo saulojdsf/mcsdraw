@@ -80,6 +80,7 @@ function Canvas({
   const history = useRef<{ nodes: Node[]; edges: Edge[] }[]>([]);
   const future = useRef<{ nodes: Node[]; edges: Edge[] }[]>([]);
   const isDragging = useRef(false);
+  const isArrowMoving = useRef(false);
 
   const pushHistory = useCallback(() => {
     history.current = [...history.current.slice(-49), { nodes, edges }];
@@ -364,12 +365,30 @@ function Canvas({
     if (edge) setEditingEdge(edge);
   }, [edges]);
 
-  // Keyboard shortcuts: Escape, Ctrl+Z/Y/X/C/V
+  // Keyboard shortcuts: Escape, Ctrl+Z/Y/X/C/V, Arrow keys (move selected nodes)
   useEffect(() => {
+    const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setContextMenu(null); return; }
       const tag = (document.activeElement as HTMLElement)?.tagName;
       const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement as HTMLElement)?.isContentEditable;
+
+      if (ARROW_KEYS.includes(e.key) && !isEditing) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+        const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+        if (!isArrowMoving.current) {
+          isArrowMoving.current = true;
+          pushHistory();
+        }
+        setNodes(nds =>
+          nds.map(n => n.selected ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } } : n)
+        );
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && !isEditing) {
         if (e.key === 'z') { e.preventDefault(); handleUndo(); }
         else if (e.key === 'y') { e.preventDefault(); handleRedo(); }
@@ -378,9 +397,20 @@ function Canvas({
         else if (e.key === 'v') { e.preventDefault(); handlePaste(); }
       }
     };
+
+    const keyUpHandler = (e: KeyboardEvent) => {
+      if (ARROW_KEYS.includes(e.key)) {
+        isArrowMoving.current = false;
+      }
+    };
+
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleUndo, handleRedo, handleCopy, handleCut, handlePaste]);
+    window.addEventListener('keyup', keyUpHandler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+      window.removeEventListener('keyup', keyUpHandler);
+    };
+  }, [handleUndo, handleRedo, handleCopy, handleCut, handlePaste, pushHistory, setNodes]);
 
   return (
     <EdgeUpdateContext.Provider value={handleUpdateEdgeWaypoints}>

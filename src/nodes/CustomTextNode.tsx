@@ -20,6 +20,9 @@ export function CustomTextNode({ data, selected }: NodeProps<CustomTextNodeData>
   const inputCount = data.inputCount ?? 1;
   const outputCount = data.outputCount ?? 1;
   const height = nodeHeight(Math.max(inputCount, outputCount));
+  const flipped = data.flipped ?? false;
+  const inputPos = flipped ? Position.Right : Position.Left;
+  const outputPos = flipped ? Position.Left : Position.Right;
 
   return (
     <>
@@ -39,7 +42,7 @@ export function CustomTextNode({ data, selected }: NodeProps<CustomTextNodeData>
           <Handle
             key={`in${i}`}
             type="target"
-            position={Position.Left}
+            position={inputPos}
             id={`in${i}`}
             style={
               inputCount === 1
@@ -57,7 +60,7 @@ export function CustomTextNode({ data, selected }: NodeProps<CustomTextNodeData>
           <Handle
             key={`out${i}`}
             type="source"
-            position={Position.Right}
+            position={outputPos}
             id={`out${i}`}
             style={
               outputCount === 1

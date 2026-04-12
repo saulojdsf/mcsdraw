@@ -117,6 +117,7 @@ function App() {
           onNavigateIntoModule={handleNavigateIntoModule}
           onCreateChildDiagram={handleCreateChildDiagram}
           onExportReady={(handle) => { canvasHandleRef.current = handle; }}
+          onNavigateBack={navStack.length > 1 ? () => handleNavigateTo(navStack.length - 2) : undefined}
         />
       </div>
     </div>

@@ -35,6 +35,7 @@ interface DiagramCanvasProps {
   onNavigateIntoModule: (nodeId: string, label: string) => void;
   onCreateChildDiagram: (childId: string) => void;
   onExportReady: (handle: DiagramCanvasHandle) => void;
+  onNavigateBack?: () => void;
 }
 
 let nodeIdCounter = Date.now();
@@ -65,6 +66,7 @@ function Canvas({
   onNavigateIntoModule,
   onCreateChildDiagram,
   onExportReady,
+  onNavigateBack,
 }: DiagramCanvasProps) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState(diagram.nodes);
   const [edges, setEdges, onEdgesChangeBase] = useEdgesState(diagram.edges);
@@ -389,6 +391,12 @@ function Canvas({
         return;
       }
 
+      if (e.key === 'Backspace' && !isEditing && onNavigateBack) {
+        e.preventDefault();
+        onNavigateBack();
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && !isEditing) {
         if (e.key === 'z') { e.preventDefault(); handleUndo(); }
         else if (e.key === 'y') { e.preventDefault(); handleRedo(); }
@@ -410,7 +418,7 @@ function Canvas({
       window.removeEventListener('keydown', handler);
       window.removeEventListener('keyup', keyUpHandler);
     };
-  }, [handleUndo, handleRedo, handleCopy, handleCut, handlePaste, pushHistory, setNodes]);
+  }, [handleUndo, handleRedo, handleCopy, handleCut, handlePaste, pushHistory, setNodes, onNavigateBack]);
 
   return (
     <EdgeUpdateContext.Provider value={handleUpdateEdgeWaypoints}>

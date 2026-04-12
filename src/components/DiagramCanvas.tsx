@@ -274,6 +274,10 @@ function Canvas({
       if (type === 'customTextNode') {
         extraProps.style = { width: 140, height: 60 };
       }
+      if (type === 'moduleNode') {
+        // PADDING_TOP(36) + 1 * HANDLE_SPACING(28) + PADDING_BOTTOM(20) = 84
+        extraProps.style = { width: 140, height: 84 };
+      }
 
       setNodes((nds) => [...nds, { id, type, position, data, ...extraProps }]);
     },

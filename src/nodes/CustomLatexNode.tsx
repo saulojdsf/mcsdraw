@@ -22,6 +22,9 @@ export function CustomLatexNode({ data, selected, style }: NodeProps<CustomLatex
   const outputCount = data.outputCount ?? 1;
   const minHeight = minNodeHeight(Math.max(inputCount, outputCount));
   const height = (style?.height as number) ?? minHeight;
+  const flipped = data.flipped ?? false;
+  const inputPos = flipped ? Position.Right : Position.Left;
+  const outputPos = flipped ? Position.Left : Position.Right;
 
   return (
     <>
@@ -41,7 +44,7 @@ export function CustomLatexNode({ data, selected, style }: NodeProps<CustomLatex
           <Handle
             key={`in${i}`}
             type="target"
-            position={Position.Left}
+            position={inputPos}
             id={`in${i}`}
             style={{ top: handleTop(i, inputCount, height), transform: 'translateY(-50%)' }}
           />
@@ -60,7 +63,7 @@ export function CustomLatexNode({ data, selected, style }: NodeProps<CustomLatex
           <Handle
             key={`out${i}`}
             type="source"
-            position={Position.Right}
+            position={outputPos}
             id={`out${i}`}
             style={{ top: handleTop(i, outputCount, height), transform: 'translateY(-50%)' }}
           />

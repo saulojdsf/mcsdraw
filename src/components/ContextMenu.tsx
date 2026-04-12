@@ -5,6 +5,7 @@ export interface ContextMenuState {
   y: number;
   type: 'node' | 'edge';
   targetId: string;
+  canFlip?: boolean;
 }
 
 interface ContextMenuProps {
@@ -14,6 +15,7 @@ interface ContextMenuProps {
   onDeleteNode: (id: string) => void;
   onEditEdgeLabel: (id: string) => void;
   onDeleteEdge: (id: string) => void;
+  onFlipNode: (id: string) => void;
 }
 
 function MenuItem({ onClick, danger, children }: { onClick: () => void; danger?: boolean; children: React.ReactNode }) {
@@ -27,7 +29,7 @@ function MenuItem({ onClick, danger, children }: { onClick: () => void; danger?:
   );
 }
 
-export function ContextMenu({ menu, onClose, onEditNode, onDeleteNode, onEditEdgeLabel, onDeleteEdge }: ContextMenuProps) {
+export function ContextMenu({ menu, onClose, onEditNode, onDeleteNode, onEditEdgeLabel, onDeleteEdge, onFlipNode }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   // Clamp position so menu doesn't overflow viewport
@@ -61,6 +63,11 @@ export function ContextMenu({ menu, onClose, onEditNode, onDeleteNode, onEditEdg
           <MenuItem onClick={() => { onEditNode(menu.targetId); onClose(); }}>
             Edit...
           </MenuItem>
+          {menu.canFlip && (
+            <MenuItem onClick={() => { onFlipNode(menu.targetId); onClose(); }}>
+              Flip
+            </MenuItem>
+          )}
           <div className="my-1 border-t border-slate-100" />
           <MenuItem danger onClick={() => { onDeleteNode(menu.targetId); onClose(); }}>
             Delete

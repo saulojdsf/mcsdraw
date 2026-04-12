@@ -24,6 +24,9 @@ export function ModuleNode({ id, data, selected, style }: NodeProps<ModuleNodeDa
 
   const inputCount = Math.max(1, data.inputCount ?? 1);
   const outputCount = Math.max(1, data.outputCount ?? 1);
+  const flipped = data.flipped ?? false;
+  const inputPos = flipped ? Position.Right : Position.Left;
+  const outputPos = flipped ? Position.Left : Position.Right;
 
   const width = (style?.width as number) ?? DEFAULT_WIDTH;
   const height = (style?.height as number) ?? defaultHeight(inputCount, outputCount);
@@ -46,7 +49,7 @@ export function ModuleNode({ id, data, selected, style }: NodeProps<ModuleNodeDa
           <Handle
             key={`in${i}`}
             type="target"
-            position={Position.Left}
+            position={inputPos}
             id={`in${i}`}
             style={{ top: handleTop(i, inputCount, height), transform: 'translateY(-50%)' }}
           />
@@ -75,7 +78,7 @@ export function ModuleNode({ id, data, selected, style }: NodeProps<ModuleNodeDa
           <Handle
             key={`out${i}`}
             type="source"
-            position={Position.Right}
+            position={outputPos}
             id={`out${i}`}
             style={{ top: handleTop(i, outputCount, height), transform: 'translateY(-50%)' }}
           />

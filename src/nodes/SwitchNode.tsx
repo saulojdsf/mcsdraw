@@ -22,7 +22,13 @@ export function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
   const count = data.inputCount ?? 2;
   const H = nodeHeight(count);
   const outY = H / 2;
-  const cx2 = W - 14;
+  const flipped = data.flipped ?? false;
+  const inputPos = flipped ? Position.Right : Position.Left;
+  const outputPos = flipped ? Position.Left : Position.Right;
+  // SVG coordinates: inputs on left (cx=14) normally, on right (cx=W-14) when flipped
+  const inputDotX = flipped ? W - 14 : 14;
+  const outputDotX = flipped ? 14 : W - 14;
+  const lineX2Offset = flipped ? outputDotX + 2 : outputDotX - 2;
 
   return (
     <div style={{ width: W, position: 'relative' }}>
@@ -31,7 +37,7 @@ export function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
         <Handle
           key={`in${i}`}
           type="target"
-          position={Position.Left}
+          position={inputPos}
           id={`in${i}`}
           style={{ top: handleTop(i, count, H), transform: 'translateY(-50%)' }}
         />
@@ -54,11 +60,11 @@ export function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
           const iy = handleTop(i, count, H);
           return (
             <g key={i}>
-              <circle cx={14} cy={iy} r={2.5} fill={stroke} />
+              <circle cx={inputDotX} cy={iy} r={2.5} fill={stroke} />
               {/* Arm from each input converging toward output */}
               <line
-                x1={14} y1={iy}
-                x2={cx2 - 2} y2={outY - (count > 1 ? (i - (count - 1) / 2) * 4 : 0)}
+                x1={inputDotX} y1={iy}
+                x2={lineX2Offset} y2={outY - (count > 1 ? (i - (count - 1) / 2) * 4 : 0)}
                 stroke={stroke}
                 strokeWidth={1.5}
                 strokeLinecap="round"
@@ -70,7 +76,7 @@ export function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
         })}
 
         {/* Output terminal dot */}
-        <circle cx={cx2} cy={outY} r={2.5} fill={stroke} />
+        <circle cx={outputDotX} cy={outY} r={2.5} fill={stroke} />
 
         {/* Optional text */}
         {data.text && (
@@ -113,7 +119,7 @@ export function SwitchNode({ data, selected }: NodeProps<SwitchNodeData>) {
 
       <Handle
         type="source"
-        position={Position.Right}
+        position={outputPos}
         style={{ top: outY, transform: 'translateY(-50%)' }}
       />
     </div>

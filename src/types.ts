@@ -32,34 +32,40 @@ export interface GainNodeData {
   label: string;
   gain: string;
   color?: string;
+  flipped?: boolean;
 }
 
 export interface IntegratorNodeData {
   label: string;
   color?: string;
+  flipped?: boolean;
 }
 
 export interface DerivativeNodeData {
   label: string;
   color?: string;
+  flipped?: boolean;
 }
 
 export interface SumNodeData {
   label: string;
   signs: string[];
   color?: string;
+  flipped?: boolean;
 }
 
 export interface MultiplyNodeData {
   label: string;
   roles: string[]; // '×' or '÷'
   color?: string;
+  flipped?: boolean;
 }
 
 export interface DivideNodeData {
   label: string;
   roles: string[]; // 'N' or 'D'
   color?: string;
+  flipped?: boolean;
 }
 
 export interface TransferFunctionNodeData {
@@ -67,6 +73,7 @@ export interface TransferFunctionNodeData {
   numerator: string;
   denominator: string;
   color?: string;
+  flipped?: boolean;
 }
 
 export interface CustomTextNodeData {
@@ -75,6 +82,7 @@ export interface CustomTextNodeData {
   inputCount: number;
   outputCount: number;
   color?: string;
+  flipped?: boolean;
 }
 
 export interface CustomLatexNodeData {
@@ -83,6 +91,7 @@ export interface CustomLatexNodeData {
   inputCount: number;
   outputCount: number;
   color?: string;
+  flipped?: boolean;
 }
 
 export interface SwitchNodeData {
@@ -90,6 +99,7 @@ export interface SwitchNodeData {
   text: string;
   inputCount: number;
   color?: string;
+  flipped?: boolean;
 }
 
 export interface ModuleNodeData {
@@ -98,6 +108,7 @@ export interface ModuleNodeData {
   inputCount: number;
   outputCount: number;
   color?: string;
+  flipped?: boolean;
 }
 
 export interface TextLabelNodeData {

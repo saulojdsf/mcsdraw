@@ -43,6 +43,12 @@ function genId() {
   return `node_${nodeIdCounter++}`;
 }
 
+const FLIPPABLE_TYPES = new Set([
+  'gainNode', 'triangleNode', 'integratorNode', 'derivativeNode',
+  'sumNode', 'multiplyNode', 'divideNode', 'transferFunctionNode',
+  'customTextNode', 'customLatexNode', 'moduleNode', 'switchNode',
+]);
+
 // Module-level clipboard — survives navigation between diagram levels
 let sharedClipboard: { nodes: Node[]; edges: Edge[] } | null = null;
 
@@ -337,11 +343,22 @@ function Canvas({
     [selectedNodes, setNodes]
   );
 
+  const handleFlipNode = useCallback((id: string) => {
+    pushHistory();
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === id
+          ? { ...n, data: { ...(n.data as Record<string, unknown>), flipped: !(n.data as Record<string, unknown>).flipped } }
+          : n
+      )
+    );
+  }, [setNodes, pushHistory]);
+
   // Context menu handlers
   const onNodeContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
     e.preventDefault();
     e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, type: 'node', targetId: node.id });
+    setContextMenu({ x: e.clientX, y: e.clientY, type: 'node', targetId: node.id, canFlip: FLIPPABLE_TYPES.has(node.type ?? '') });
   }, []);
 
   const onEdgeContextMenu = useCallback((e: React.MouseEvent, edge: Edge) => {
@@ -524,6 +541,7 @@ function Canvas({
             onDeleteNode={handleContextDeleteNode}
             onEditEdgeLabel={handleContextEditEdgeLabel}
             onDeleteEdge={handleContextDeleteEdge}
+            onFlipNode={handleFlipNode}
           />
         )}
 

@@ -8,25 +8,33 @@ const H = 56;
 export function TriangleNode({ data, selected }: NodeProps<GainNodeData>) {
   const stroke = selected ? '#3b82f6' : '#334155';
   const fill = data.color ?? '#ffffff';
+  const flipped = data.flipped ?? false;
+  const inputPos = flipped ? Position.Right : Position.Left;
+  const outputPos = flipped ? Position.Left : Position.Right;
+  // Normal: tip points right; flipped: tip points left
+  const points = flipped
+    ? `${W - 2},2 2,${H / 2} ${W - 2},${H - 2}`
+    : `2,2 ${W - 2},${H / 2} 2,${H - 2}`;
+  const textX = flipped ? W * 0.62 : W * 0.38;
 
   return (
     <div style={{ width: W, height: H, position: 'relative' }}>
       <Handle
         type="target"
-        position={Position.Left}
+        position={inputPos}
         style={{ top: H / 2, transform: 'translateY(-50%)' }}
       />
 
       <svg width={W} height={H}>
         <polygon
-          points={`2,2 ${W - 2},${H / 2} 2,${H - 2}`}
+          points={points}
           fill={fill}
           stroke={stroke}
           strokeWidth="2"
           strokeLinejoin="round"
         />
         <text
-          x={W * 0.38}
+          x={textX}
           y={H / 2}
           textAnchor="middle"
           dominantBaseline="middle"
@@ -50,7 +58,7 @@ export function TriangleNode({ data, selected }: NodeProps<GainNodeData>) {
 
       <Handle
         type="source"
-        position={Position.Right}
+        position={outputPos}
         style={{ top: H / 2, transform: 'translateY(-50%)' }}
       />
     </div>

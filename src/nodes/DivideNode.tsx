@@ -1,3 +1,4 @@
+import React from 'react';
 import { Handle, Position } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 import type { DivideNodeData } from '../types';
@@ -20,6 +21,12 @@ export function DivideNode({ data, selected }: NodeProps<DivideNodeData>) {
   const roles = data.roles ?? ['N', 'D'];
   const count = roles.length;
   const height = nodeHeight(count);
+  const flipped = data.flipped ?? false;
+  const inputPos = flipped ? Position.Right : Position.Left;
+  const outputPos = flipped ? Position.Left : Position.Right;
+  const labelStyle: React.CSSProperties = flipped
+    ? { right: 8, top: '50%', transform: 'translateY(-50%)', whiteSpace: 'nowrap' }
+    : { left: 8, top: '50%', transform: 'translateY(-50%)', whiteSpace: 'nowrap' };
 
   return (
     <div
@@ -32,13 +39,13 @@ export function DivideNode({ data, selected }: NodeProps<DivideNodeData>) {
           <Handle
             key={`in${i}`}
             type="target"
-            position={Position.Left}
+            position={inputPos}
             id={`in${i}`}
             style={{ top, transform: 'translateY(-50%)' }}
           >
             <span
               className="absolute text-[9px] font-bold text-slate-600 pointer-events-none"
-              style={{ left: 8, top: '50%', transform: 'translateY(-50%)', whiteSpace: 'nowrap' }}
+              style={labelStyle}
             >
               {role}
             </span>
@@ -50,7 +57,7 @@ export function DivideNode({ data, selected }: NodeProps<DivideNodeData>) {
 
       <Handle
         type="source"
-        position={Position.Right}
+        position={outputPos}
         id="out"
         style={{ top: '50%', transform: 'translateY(-50%)' }}
       />

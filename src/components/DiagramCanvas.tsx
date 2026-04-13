@@ -35,6 +35,7 @@ interface DiagramCanvasProps {
   onDiagramChange: (nodes: Node[], edges: Edge[]) => void;
   onNavigateIntoModule: (nodeId: string, label: string) => void;
   onCreateChildDiagram: (childId: string) => void;
+  onCopyChildDiagram: (sourceId: string, destId: string) => void;
   onExportReady: (handle: DiagramCanvasHandle) => void;
   onNavigateBack?: () => void;
 }
@@ -45,8 +46,7 @@ function genId() {
 }
 
 const FLIPPABLE_TYPES = new Set([
-  'gainNode', 'triangleNode', 'integratorNode', 'derivativeNode',
-  'sumNode', 'multiplyNode', 'divideNode', 'transferFunctionNode',
+  'triangleNode', 'sumNode', 'multiplyNode', 'divideNode',
   'customTextNode', 'customLatexNode', 'moduleNode', 'switchNode',
 ]);
 
@@ -66,6 +66,7 @@ function Canvas({
   onDiagramChange,
   onNavigateIntoModule,
   onCreateChildDiagram,
+  onCopyChildDiagram,
   onExportReady,
   onNavigateBack,
 }: DiagramCanvasProps) {
@@ -163,9 +164,14 @@ function Canvas({
       idMap.set(n.id, newId);
       let data = { ...(n.data as Record<string, unknown>) };
       if (n.type === 'moduleNode') {
+        const originalChildId = data.childDiagramId as string | undefined;
         const childId = `diagram_${newId}`;
         data = { ...data, childDiagramId: childId };
-        onCreateChildDiagram(childId);
+        if (originalChildId) {
+          onCopyChildDiagram(originalChildId, childId);
+        } else {
+          onCreateChildDiagram(childId);
+        }
       }
       const position = {
         x: mouseFlow.x + (n.position.x - centerX),
@@ -182,7 +188,7 @@ function Canvas({
     }));
     setNodes(nds => [...nds.map(n => ({ ...n, selected: false })), ...newNodes]);
     setEdges(eds => [...eds, ...newEdges]);
-  }, [pushHistory, setNodes, setEdges, onCreateChildDiagram, screenToFlowPosition]);
+  }, [pushHistory, setNodes, setEdges, onCreateChildDiagram, onCopyChildDiagram, screenToFlowPosition]);
 
   const handleCut = useCallback(() => {
     const sel = nodes.filter(n => n.selected);
@@ -475,12 +481,8 @@ function Canvas({
           <MiniMap
             nodeColor={(n) => {
               const colors: Record<string, string> = {
-                gainNode: '#e2e8f0',
                 triangleNode: '#e2e8f0',
-                integratorNode: '#e2e8f0',
-                derivativeNode: '#e2e8f0',
                 sumNode: '#e2e8f0',
-                transferFunctionNode: '#e2e8f0',
                 customTextNode: '#e2e8f0',
                 customLatexNode: '#e2e8f0',
                 moduleNode: '#cbd5e1',

@@ -97,6 +97,13 @@ function App() {
     setDiagrams((prev) => ({ ...prev, [childId]: prev[childId] ?? { nodes: [], edges: [] } }));
   }, []);
 
+  const handleCopyChildDiagram = useCallback((sourceId: string, destId: string) => {
+    setDiagrams((prev) => ({
+      ...prev,
+      [destId]: prev[sourceId] ? { nodes: [...prev[sourceId].nodes], edges: [...prev[sourceId].edges] } : { nodes: [], edges: [] },
+    }));
+  }, []);
+
   // JSON export — saves all diagrams
   const handleExportJson = useCallback(() => {
     const save: SaveFile = { version: 1, diagrams };
@@ -123,6 +130,82 @@ function App() {
     };
     reader.readAsText(file);
   }, []);
+
+  // JSON merge — appends imported diagram into the current view without replacing anything
+  const handleMergeJson = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const save = JSON.parse(e.target?.result as string) as SaveFile;
+        if (!save.diagrams || !save.diagrams.root) {
+          alert('Invalid diagram file.');
+          return;
+        }
+        const normalized = normalizeDiagrams(save.diagrams);
+
+        // Use a timestamp suffix to make all imported IDs unique
+        const suffix = `_imp${Date.now()}`;
+        const nodeIdMap = new Map<string, string>();
+        const diagIdMap = new Map<string, string>();
+
+        // First pass: assign new IDs to every node across every diagram
+        for (const diag of Object.values(normalized)) {
+          for (const node of diag.nodes) {
+            const newNodeId = node.id + suffix;
+            nodeIdMap.set(node.id, newNodeId);
+            if (node.type === 'moduleNode') {
+              const oldChildId = (node.data as { childDiagramId?: string }).childDiagramId;
+              if (oldChildId) diagIdMap.set(oldChildId, `diagram_${newNodeId}`);
+            }
+          }
+        }
+
+        const remapDiagram = (diag: DiagramData): DiagramData => ({
+          nodes: diag.nodes.map((n) => {
+            const newId = nodeIdMap.get(n.id) ?? n.id;
+            const data = { ...(n.data as Record<string, unknown>) };
+            if (n.type === 'moduleNode') {
+              const oldChildId = data.childDiagramId as string | undefined;
+              if (oldChildId) data.childDiagramId = diagIdMap.get(oldChildId) ?? oldChildId;
+            }
+            return { ...n, id: newId, data, selected: false };
+          }),
+          edges: diag.edges.map((e) => ({
+            ...e,
+            id: e.id + suffix,
+            source: nodeIdMap.get(e.source) ?? e.source,
+            target: nodeIdMap.get(e.target) ?? e.target,
+            selected: false,
+          })),
+        });
+
+        // Remap all child diagrams
+        const newChildDiagrams: Record<string, DiagramData> = {};
+        for (const [diagId, diag] of Object.entries(normalized)) {
+          if (diagId === 'root') continue;
+          const newDiagId = diagIdMap.get(diagId);
+          if (newDiagId) newChildDiagrams[newDiagId] = remapDiagram(diag);
+        }
+
+        // Merge remapped root into the currently active diagram
+        const remappedRoot = remapDiagram(normalized.root);
+        setDiagrams((prev) => {
+          const current = prev[currentDiagramId] ?? { nodes: [], edges: [] };
+          return {
+            ...prev,
+            ...newChildDiagrams,
+            [currentDiagramId]: {
+              nodes: [...current.nodes, ...remappedRoot.nodes],
+              edges: [...current.edges, ...remappedRoot.edges],
+            },
+          };
+        });
+      } catch {
+        alert('Could not parse file.');
+      }
+    };
+    reader.readAsText(file);
+  }, [currentDiagramId]);
 
   // Image export — delegates to canvas
   const handleExportPng = useCallback(() => canvasHandleRef.current?.exportImage('png'), []);
@@ -154,6 +237,7 @@ function App() {
           <ExportMenu
             onExportJson={handleExportJson}
             onImportJson={handleImportJson}
+            onMergeJson={handleMergeJson}
             onExportPng={handleExportPng}
             onExportSvg={handleExportSvg}
           />
@@ -167,6 +251,7 @@ function App() {
           onDiagramChange={handleDiagramChange}
           onNavigateIntoModule={handleNavigateIntoModule}
           onCreateChildDiagram={handleCreateChildDiagram}
+          onCopyChildDiagram={handleCopyChildDiagram}
           onExportReady={(handle) => { canvasHandleRef.current = handle; }}
           onNavigateBack={navStack.length > 1 ? () => handleNavigateTo(navStack.length - 2) : undefined}
         />

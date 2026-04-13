@@ -3,13 +3,15 @@ import { useRef, useState } from 'react';
 interface ExportMenuProps {
   onExportJson: () => void;
   onImportJson: (file: File) => void;
+  onMergeJson: (file: File) => void;
   onExportPng: () => void;
   onExportSvg: () => void;
 }
 
-export function ExportMenu({ onExportJson, onImportJson, onExportPng, onExportSvg }: ExportMenuProps) {
+export function ExportMenu({ onExportJson, onImportJson, onMergeJson, onExportPng, onExportSvg }: ExportMenuProps) {
   const [open, setOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mergeInputRef = useRef<HTMLInputElement>(null);
 
   const action = (fn: () => void) => {
     fn();
@@ -19,6 +21,13 @@ export function ExportMenu({ onExportJson, onImportJson, onExportPng, onExportSv
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) onImportJson(file);
+    e.target.value = '';
+    setOpen(false);
+  };
+
+  const handleMergeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onMergeJson(file);
     e.target.value = '';
     setOpen(false);
   };
@@ -56,6 +65,12 @@ export function ExportMenu({ onExportJson, onImportJson, onExportPng, onExportSv
             >
               <span className="text-slate-400">↑</span> Import JSON
             </button>
+            <button
+              onClick={() => { setOpen(false); mergeInputRef.current?.click(); }}
+              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700 flex items-center gap-2"
+            >
+              <span className="text-slate-400">⊕</span> Merge JSON
+            </button>
             <div className="my-1 border-t border-slate-100" />
             <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Image</div>
             <button
@@ -80,6 +95,13 @@ export function ExportMenu({ onExportJson, onImportJson, onExportPng, onExportSv
         accept=".json"
         className="hidden"
         onChange={handleFileChange}
+      />
+      <input
+        ref={mergeInputRef}
+        type="file"
+        accept=".json"
+        className="hidden"
+        onChange={handleMergeChange}
       />
     </div>
   );

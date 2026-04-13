@@ -107,19 +107,12 @@ export function EditModal({ node, onSave, onClose }: EditModalProps) {
 
   const renderFields = () => {
     switch (node.type) {
-      case 'gainNode':
       case 'triangleNode':
         return (
           <>
             <Field label="Gain Value" value={data.gain as string ?? ''} onChange={(v) => set('gain', v)} placeholder="K" />
             <Field label="Label (optional)" value={data.label as string ?? ''} onChange={(v) => set('label', v)} placeholder="e.g. proportional gain" />
           </>
-        );
-
-      case 'integratorNode':
-      case 'derivativeNode':
-        return (
-          <Field label="Label (optional)" value={data.label as string ?? ''} onChange={(v) => set('label', v)} placeholder="optional label" />
         );
 
       case 'sumNode': {
@@ -229,21 +222,6 @@ export function EditModal({ node, onSave, onClose }: EditModalProps) {
         );
       }
 
-      case 'transferFunctionNode': {
-        const num = data.numerator as string ?? '1';
-        const den = data.denominator as string ?? 's+1';
-        return (
-          <>
-            <Field label="Numerator (LaTeX)" value={num} onChange={(v) => set('numerator', v)} placeholder="e.g. 1" />
-            <Field label="Denominator (LaTeX)" value={den} onChange={(v) => set('denominator', v)} placeholder="e.g. s+1" />
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Preview</label>
-              <LatexPreview formula={`\\dfrac{${num}}{${den}}`} />
-            </div>
-            <Field label="Label (optional)" value={data.label as string ?? ''} onChange={(v) => set('label', v)} />
-          </>
-        );
-      }
 
       case 'customTextNode':
         return (

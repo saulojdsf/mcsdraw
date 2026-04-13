@@ -13,39 +13,16 @@ export interface NavItem {
 }
 
 export type BlockNodeType =
-  | 'gainNode'
   | 'triangleNode'
-  | 'integratorNode'
-  | 'derivativeNode'
   | 'sumNode'
   | 'multiplyNode'
   | 'divideNode'
-  | 'transferFunctionNode'
   | 'customTextNode'
   | 'customLatexNode'
   | 'moduleNode'
   | 'switchNode'
   | 'textLabelNode'
   | 'groupRectNode';
-
-export interface GainNodeData {
-  label: string;
-  gain: string;
-  color?: string;
-  flipped?: boolean;
-}
-
-export interface IntegratorNodeData {
-  label: string;
-  color?: string;
-  flipped?: boolean;
-}
-
-export interface DerivativeNodeData {
-  label: string;
-  color?: string;
-  flipped?: boolean;
-}
 
 export interface SumNodeData {
   label: string;
@@ -64,14 +41,6 @@ export interface MultiplyNodeData {
 export interface DivideNodeData {
   label: string;
   roles: string[]; // 'N' or 'D'
-  color?: string;
-  flipped?: boolean;
-}
-
-export interface TransferFunctionNodeData {
-  label: string;
-  numerator: string;
-  denominator: string;
   color?: string;
   flipped?: boolean;
 }
@@ -123,14 +92,10 @@ export interface GroupRectNodeData {
 }
 
 export const defaultNodeData: Record<BlockNodeType, Record<string, unknown>> = {
-  gainNode: { label: '', gain: 'K' },
   triangleNode: { label: '', gain: 'K' },
-  integratorNode: { label: '' },
-  derivativeNode: { label: '' },
   sumNode: { label: '', signs: ['+', '+'] },
   multiplyNode: { label: '', roles: ['×', '×'] },
   divideNode: { label: '', roles: ['N', 'D'] },
-  transferFunctionNode: { label: '', numerator: '1', denominator: 's+1' },
   customTextNode: { label: '', text: 'Text', inputCount: 1, outputCount: 1 },
   customLatexNode: { label: '', formula: '\\frac{1}{s}', inputCount: 1, outputCount: 1 },
   moduleNode: { label: 'Module', childDiagramId: '', inputCount: 1, outputCount: 1 },
@@ -140,14 +105,10 @@ export const defaultNodeData: Record<BlockNodeType, Record<string, unknown>> = {
 };
 
 export const blockLabels: Record<BlockNodeType, string> = {
-  gainNode: 'Gain',
   triangleNode: 'Triangle',
-  integratorNode: 'Integrator',
-  derivativeNode: 'Derivative',
   sumNode: 'Sum',
   multiplyNode: 'Multiply',
   divideNode: 'Divide',
-  transferFunctionNode: 'Transfer Fn',
   customTextNode: 'Custom Text',
   customLatexNode: 'LaTeX Block',
   moduleNode: 'Module',

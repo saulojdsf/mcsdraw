@@ -1,4 +1,3 @@
-import { useRef, useState, useEffect } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 import type { CustomTextNodeData } from '../types';
@@ -10,31 +9,17 @@ function nodeHeight(count: number) {
   return Math.max(52, PADDING_V * 2 + count * HANDLE_SPACING);
 }
 
-function handleTop(index: number, count: number, height: number) {
-  if (count === 0) return height / 2;
-  const usable = height - PADDING_V * 2;
-  const step = usable / count;
-  return PADDING_V + step * index + step / 2;
+function handleTopPct(index: number, count: number): string {
+  return `${((index + 0.5) / count) * 100}%`;
 }
 
 export function CustomTextNode({ data, selected }: NodeProps<CustomTextNodeData>) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const inputCount = data.inputCount ?? 1;
   const outputCount = data.outputCount ?? 1;
   const minHeight = nodeHeight(Math.max(inputCount, outputCount));
   const flipped = data.flipped ?? false;
   const inputPos = flipped ? Position.Right : Position.Left;
   const outputPos = flipped ? Position.Left : Position.Right;
-
-  const [renderHeight, setRenderHeight] = useState(minHeight);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setRenderHeight(entry.contentRect.height));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
 
   return (
     <>
@@ -46,7 +31,6 @@ export function CustomTextNode({ data, selected }: NodeProps<CustomTextNodeData>
         handleStyle={{ backgroundColor: '#3b82f6', width: 8, height: 8, borderRadius: 2 }}
       />
       <div
-        ref={containerRef}
         className={`w-full h-full border-2 rounded px-4 py-2 text-center shadow-sm select-none flex flex-col items-center justify-center relative ${selected ? 'border-blue-500' : 'border-slate-700'}`}
         style={{ backgroundColor: data.color ?? '#ffffff' }}
       >
@@ -57,11 +41,7 @@ export function CustomTextNode({ data, selected }: NodeProps<CustomTextNodeData>
             type="target"
             position={inputPos}
             id={`in${i}`}
-            style={
-              inputCount === 1
-                ? { top: '50%', transform: 'translateY(-50%)' }
-                : { top: handleTop(i, inputCount, renderHeight), transform: 'translateY(-50%)' }
-            }
+            style={{ top: handleTopPct(i, inputCount), transform: 'translateY(-50%)' }}
           />
         ))}
 
@@ -75,11 +55,7 @@ export function CustomTextNode({ data, selected }: NodeProps<CustomTextNodeData>
             type="source"
             position={outputPos}
             id={`out${i}`}
-            style={
-              outputCount === 1
-                ? { top: '50%', transform: 'translateY(-50%)' }
-                : { top: handleTop(i, outputCount, renderHeight), transform: 'translateY(-50%)' }
-            }
+            style={{ top: handleTopPct(i, outputCount), transform: 'translateY(-50%)' }}
           />
         ))}
       </div>

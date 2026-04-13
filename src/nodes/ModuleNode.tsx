@@ -1,4 +1,4 @@
-import { useContext, useRef, useState, useEffect } from 'react';
+import { useContext } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 import { NodeEditContext } from '../context/NodeEditContext';
@@ -7,21 +7,17 @@ import type { ModuleNodeData } from '../types';
 const HANDLE_SPACING = 28;
 const PADDING_TOP = 36;
 const PADDING_BOTTOM = 20;
-const DEFAULT_WIDTH = 140;
 
 function defaultHeight(inputCount: number, outputCount: number) {
   return PADDING_TOP + Math.max(inputCount, outputCount) * HANDLE_SPACING + PADDING_BOTTOM;
 }
 
-function handleTop(index: number, count: number, totalHeight: number) {
-  const usable = totalHeight - PADDING_TOP - PADDING_BOTTOM;
-  const step = usable / count;
-  return PADDING_TOP + step * index + step / 2;
+function handleTopPct(index: number, count: number): string {
+  return `${((index + 0.5) / count) * 100}%`;
 }
 
 export function ModuleNode({ id, data, selected }: NodeProps<ModuleNodeData>) {
   const openEdit = useContext(NodeEditContext);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const inputCount = Math.max(1, data.inputCount ?? 1);
   const outputCount = Math.max(1, data.outputCount ?? 1);
@@ -30,16 +26,6 @@ export function ModuleNode({ id, data, selected }: NodeProps<ModuleNodeData>) {
   const outputPos = flipped ? Position.Left : Position.Right;
 
   const minHeight = defaultHeight(inputCount, outputCount);
-  // Track actual rendered height for handle positioning
-  const [renderHeight, setRenderHeight] = useState(minHeight);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setRenderHeight(entry.contentRect.height));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
 
   return (
     <>
@@ -51,18 +37,17 @@ export function ModuleNode({ id, data, selected }: NodeProps<ModuleNodeData>) {
         handleStyle={{ backgroundColor: '#3b82f6', width: 8, height: 8, borderRadius: 2 }}
       />
       <div
-        ref={containerRef}
         className={`border-4 rounded-lg shadow-md select-none relative ${selected ? 'border-blue-500' : 'border-slate-700'}`}
         style={{ width: '100%', height: '100%', backgroundColor: data.color ?? '#ffffff' }}
       >
-        {/* Input handles — pixel-positioned */}
+        {/* Input handles */}
         {Array.from({ length: inputCount }, (_, i) => (
           <Handle
             key={`in${i}`}
             type="target"
             position={inputPos}
             id={`in${i}`}
-            style={{ top: handleTop(i, inputCount, renderHeight), transform: 'translateY(-50%)' }}
+            style={{ top: handleTopPct(i, inputCount), transform: 'translateY(-50%)' }}
           />
         ))}
 
@@ -84,14 +69,14 @@ export function ModuleNode({ id, data, selected }: NodeProps<ModuleNodeData>) {
           </svg>
         </button>
 
-        {/* Output handles — pixel-positioned */}
+        {/* Output handles */}
         {Array.from({ length: outputCount }, (_, i) => (
           <Handle
             key={`out${i}`}
             type="source"
             position={outputPos}
             id={`out${i}`}
-            style={{ top: handleTop(i, outputCount, renderHeight), transform: 'translateY(-50%)' }}
+            style={{ top: handleTopPct(i, outputCount), transform: 'translateY(-50%)' }}
           />
         ))}
       </div>

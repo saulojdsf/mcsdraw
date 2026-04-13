@@ -60,14 +60,10 @@ function ToolbarBlock({ type, preview, isLatex, isSvg }: ToolbarBlockProps) {
 }
 
 const blockStyles: Record<BlockNodeType, string> = {
-  gainNode: 'border-slate-700 bg-white text-slate-800',
   triangleNode: 'border-0 bg-transparent',
-  integratorNode: 'border-slate-700 bg-white text-slate-800',
-  derivativeNode: 'border-slate-700 bg-white text-slate-800',
   sumNode: 'border-slate-700 bg-white text-slate-800 rounded-3xl',
   multiplyNode: 'border-slate-700 bg-white text-slate-800 rounded-3xl',
   divideNode: 'border-slate-700 bg-white text-slate-800 rounded-3xl',
-  transferFunctionNode: 'border-slate-700 bg-white text-slate-800',
   customTextNode: 'border-slate-700 bg-white text-slate-800',
   customLatexNode: 'border-slate-700 bg-white text-slate-800',
   moduleNode: 'border-4 border-slate-700 bg-white text-slate-800 font-semibold',
@@ -77,14 +73,10 @@ const blockStyles: Record<BlockNodeType, string> = {
 };
 
 const blocks: Array<{ type: BlockNodeType; preview: string; isLatex?: boolean; isSvg?: 'triangle' | 'switch' | 'textLabel' | 'groupRect' }> = [
-  { type: 'gainNode', preview: 'K' },
   { type: 'triangleNode', preview: '', isSvg: 'triangle' },
-  { type: 'integratorNode', preview: '\\dfrac{1}{s}', isLatex: true },
-  { type: 'derivativeNode', preview: 's', isLatex: true },
   { type: 'sumNode', preview: '∑' },
   { type: 'multiplyNode', preview: '×' },
   { type: 'divideNode', preview: '÷' },
-  { type: 'transferFunctionNode', preview: '\\dfrac{N}{D}', isLatex: true },
   { type: 'customTextNode', preview: 'Abc' },
   { type: 'customLatexNode', preview: '\\LaTeX', isLatex: true },
   { type: 'moduleNode', preview: 'MOD' },

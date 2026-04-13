@@ -162,7 +162,7 @@ function App() {
           }
         }
 
-        const remapDiagram = (diag: DiagramData): DiagramData => ({
+        const remapDiagram = (diag: DiagramData, selectAll = false): DiagramData => ({
           nodes: diag.nodes.map((n) => {
             const newId = nodeIdMap.get(n.id) ?? n.id;
             const data = { ...(n.data as Record<string, unknown>) };
@@ -170,14 +170,14 @@ function App() {
               const oldChildId = data.childDiagramId as string | undefined;
               if (oldChildId) data.childDiagramId = diagIdMap.get(oldChildId) ?? oldChildId;
             }
-            return { ...n, id: newId, data, selected: false };
+            return { ...n, id: newId, data, selected: selectAll };
           }),
           edges: diag.edges.map((e) => ({
             ...e,
             id: e.id + suffix,
             source: nodeIdMap.get(e.source) ?? e.source,
             target: nodeIdMap.get(e.target) ?? e.target,
-            selected: false,
+            selected: selectAll,
           })),
         });
 
@@ -189,19 +189,23 @@ function App() {
           if (newDiagId) newChildDiagrams[newDiagId] = remapDiagram(diag);
         }
 
-        // Merge remapped root into the currently active diagram
-        const remappedRoot = remapDiagram(normalized.root);
+        // Merge remapped root into the currently active diagram; new nodes/edges arrive selected
+        const remappedRoot = remapDiagram(normalized.root, true);
         setDiagrams((prev) => {
           const current = prev[currentDiagramId] ?? { nodes: [], edges: [] };
+          // Deselect existing nodes/edges so only the newly merged ones are selected
+          const existingNodes = current.nodes.map((n) => ({ ...n, selected: false }));
+          const existingEdges = current.edges.map((e) => ({ ...e, selected: false }));
           return {
             ...prev,
             ...newChildDiagrams,
             [currentDiagramId]: {
-              nodes: [...current.nodes, ...remappedRoot.nodes],
-              edges: [...current.edges, ...remappedRoot.edges],
+              nodes: [...existingNodes, ...remappedRoot.nodes],
+              edges: [...existingEdges, ...remappedRoot.edges],
             },
           };
         });
+        setImportKey((k) => k + 1);
       } catch {
         alert('Could not parse file.');
       }

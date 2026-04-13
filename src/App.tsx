@@ -45,6 +45,8 @@ function normalizeNodes(nodes: Node[]): Node[] {
       }
       case 'groupRectNode':
         return { ...n, style: { width: 200, height: 150, ...n.style } };
+      case 'triangleNode':
+        return { ...n, style: { width: 72, height: 56, ...n.style } };
       default:
         return n;
     }

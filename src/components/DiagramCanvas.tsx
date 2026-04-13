@@ -279,6 +279,9 @@ function Canvas({
         // PADDING_TOP(36) + 1 * HANDLE_SPACING(28) + PADDING_BOTTOM(20) = 84
         extraProps.style = { width: 140, height: 84 };
       }
+      if (type === 'triangleNode') {
+        extraProps.style = { width: 72, height: 56 };
+      }
 
       setNodes((nds) => [...nds, { id, type, position, data, ...extraProps }]);
     },

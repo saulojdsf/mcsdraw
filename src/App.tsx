@@ -19,9 +19,44 @@ function normalizeEdges(edges: Edge[]): Edge[] {
   }));
 }
 
+// Ensure resizable nodes always have an explicit style.width/height so the
+// ReactFlow wrapper renders at the right size when loaded from JSON.
+// Old files that predate the resize feature won't have these — apply safe defaults.
+function normalizeNodes(nodes: Node[]): Node[] {
+  return nodes.map((n) => {
+    if (n.style?.width && n.style?.height) return n; // already has dimensions
+    switch (n.type) {
+      case 'moduleNode': {
+        const inputCount = Math.max(1, (n.data as { inputCount?: number }).inputCount ?? 1);
+        const outputCount = Math.max(1, (n.data as { outputCount?: number }).outputCount ?? 1);
+        // mirrors ModuleNode constants: PADDING_TOP=36, HANDLE_SPACING=28, PADDING_BOTTOM=20
+        const h = 36 + Math.max(inputCount, outputCount) * 28 + 20;
+        return { ...n, style: { width: 140, height: h, ...n.style } };
+      }
+      case 'customTextNode':
+      case 'customLatexNode': {
+        const count = Math.max(
+          (n.data as { inputCount?: number }).inputCount ?? 1,
+          (n.data as { outputCount?: number }).outputCount ?? 1
+        );
+        // mirrors nodeHeight: max(52, 14*2 + count*26)
+        const h = Math.max(52, 28 + count * 26);
+        return { ...n, style: { width: 140, height: h, ...n.style } };
+      }
+      case 'groupRectNode':
+        return { ...n, style: { width: 200, height: 150, ...n.style } };
+      default:
+        return n;
+    }
+  });
+}
+
 function normalizeDiagrams(diagrams: Record<string, DiagramData>): Record<string, DiagramData> {
   return Object.fromEntries(
-    Object.entries(diagrams).map(([id, d]) => [id, { ...d, edges: normalizeEdges(d.edges) }])
+    Object.entries(diagrams).map(([id, d]) => [
+      id,
+      { nodes: normalizeNodes(d.nodes), edges: normalizeEdges(d.edges) },
+    ])
   );
 }
 

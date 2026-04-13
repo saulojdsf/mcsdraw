@@ -266,7 +266,7 @@ function Canvas({
         extraProps.style = { width: 200, height: 150 };
         extraProps.zIndex = -1;
       }
-      if (type === 'customTextNode') {
+      if (type === 'customTextNode' || type === 'customLatexNode') {
         extraProps.style = { width: 140, height: 60 };
       }
       if (type === 'moduleNode') {

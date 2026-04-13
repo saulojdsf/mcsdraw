@@ -12,6 +12,7 @@ import ReactFlow, {
 } from 'reactflow';
 import type { Node, Edge, Connection, NodeMouseHandler, EdgeMouseHandler, NodeChange, EdgeChange } from 'reactflow';
 import { toPng, toSvg } from 'html-to-image';
+import { saveDataUrl } from '../utils/saveFile';
 import { nodeTypes, edgeTypes } from '../nodes';
 import { EditModal } from './EditModal';
 import { EdgeLabelModal } from './EdgeLabelModal';
@@ -52,12 +53,6 @@ const FLIPPABLE_TYPES = new Set([
 // Module-level clipboard — survives navigation between diagram levels
 let sharedClipboard: { nodes: Node[]; edges: Edge[] } | null = null;
 
-function download(dataUrl: string, filename: string) {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = filename;
-  a.click();
-}
 
 function excludeUi(node: HTMLElement) {
   if (node.classList?.contains('react-flow__minimap')) return false;
@@ -209,10 +204,10 @@ function Canvas({
         if (!el) return;
         if (format === 'png') {
           const dataUrl = await toPng(el, { backgroundColor: '#ffffff', filter: excludeUi, pixelRatio: 2 });
-          download(dataUrl, 'diagram.png');
+          await saveDataUrl(dataUrl, 'diagram.png', 'image/png', [{ description: 'PNG image', accept: { 'image/png': ['.png'] } }]);
         } else {
           const dataUrl = await toSvg(el, { backgroundColor: '#ffffff', filter: excludeUi });
-          download(dataUrl, 'diagram.svg');
+          await saveDataUrl(dataUrl, 'diagram.svg', 'image/svg+xml', [{ description: 'SVG image', accept: { 'image/svg+xml': ['.svg'] } }]);
         }
       },
     });

@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useRef, useState, useEffect } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
 import type { NodeProps } from 'reactflow';
 import { NodeEditContext } from '../context/NodeEditContext';
@@ -19,8 +19,9 @@ function handleTop(index: number, count: number, totalHeight: number) {
   return PADDING_TOP + step * index + step / 2;
 }
 
-export function ModuleNode({ id, data, selected, style }: NodeProps<ModuleNodeData>) {
+export function ModuleNode({ id, data, selected }: NodeProps<ModuleNodeData>) {
   const openEdit = useContext(NodeEditContext);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const inputCount = Math.max(1, data.inputCount ?? 1);
   const outputCount = Math.max(1, data.outputCount ?? 1);
@@ -28,21 +29,31 @@ export function ModuleNode({ id, data, selected, style }: NodeProps<ModuleNodeDa
   const inputPos = flipped ? Position.Right : Position.Left;
   const outputPos = flipped ? Position.Left : Position.Right;
 
-  const width = (style?.width as number) ?? DEFAULT_WIDTH;
-  const height = (style?.height as number) ?? defaultHeight(inputCount, outputCount);
+  const minHeight = defaultHeight(inputCount, outputCount);
+  // Track actual rendered height for handle positioning
+  const [renderHeight, setRenderHeight] = useState(minHeight);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setRenderHeight(entry.contentRect.height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
     <>
       <NodeResizer
         minWidth={80}
-        minHeight={defaultHeight(inputCount, outputCount)}
+        minHeight={minHeight}
         isVisible={selected}
         lineStyle={{ borderColor: '#3b82f6', borderWidth: 1 }}
         handleStyle={{ backgroundColor: '#3b82f6', width: 8, height: 8, borderRadius: 2 }}
       />
       <div
+        ref={containerRef}
         className={`border-4 rounded-lg shadow-md select-none relative ${selected ? 'border-blue-500' : 'border-slate-700'}`}
-        style={{ width, height, backgroundColor: data.color ?? '#ffffff' }}
+        style={{ width: '100%', height: '100%', backgroundColor: data.color ?? '#ffffff' }}
       >
         {/* Input handles — pixel-positioned */}
         {Array.from({ length: inputCount }, (_, i) => (
@@ -51,7 +62,7 @@ export function ModuleNode({ id, data, selected, style }: NodeProps<ModuleNodeDa
             type="target"
             position={inputPos}
             id={`in${i}`}
-            style={{ top: handleTop(i, inputCount, height), transform: 'translateY(-50%)' }}
+            style={{ top: handleTop(i, inputCount, renderHeight), transform: 'translateY(-50%)' }}
           />
         ))}
 
@@ -80,7 +91,7 @@ export function ModuleNode({ id, data, selected, style }: NodeProps<ModuleNodeDa
             type="source"
             position={outputPos}
             id={`out${i}`}
-            style={{ top: handleTop(i, outputCount, height), transform: 'translateY(-50%)' }}
+            style={{ top: handleTop(i, outputCount, renderHeight), transform: 'translateY(-50%)' }}
           />
         ))}
       </div>

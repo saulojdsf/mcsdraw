@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { saveBlob } from './utils/saveFile';
 import type { Node, Edge } from 'reactflow';
 import { MarkerType } from 'reactflow';
 import { Toolbar } from './components/Toolbar';
@@ -65,12 +66,7 @@ function App() {
   const handleExportJson = useCallback(() => {
     const save: SaveFile = { version: 1, diagrams };
     const blob = new Blob([JSON.stringify(save, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'diagram.json';
-    a.click();
-    URL.revokeObjectURL(url);
+    saveBlob(blob, 'diagram.json', [{ description: 'JSON file', accept: { 'application/json': ['.json'] } }]);
   }, [diagrams]);
 
   // JSON import — restores all diagrams, resets nav to root
@@ -97,16 +93,36 @@ function App() {
   const handleExportPng = useCallback(() => canvasHandleRef.current?.exportImage('png'), []);
   const handleExportSvg = useCallback(() => canvasHandleRef.current?.exportImage('svg'), []);
 
+  // New drawing — clears all diagrams and resets navigation
+  const handleNewDrawing = useCallback(() => {
+    if (!window.confirm('Start a new drawing? All unsaved changes will be lost.')) return;
+    setDiagrams({ root: { nodes: [], edges: [] } });
+    setNavStack([{ id: 'root', label: 'Root' }]);
+    setImportKey((k) => k + 1);
+  }, []);
+
   return (
     <div className="flex flex-col h-screen bg-slate-50">
       <div className="flex items-center justify-between pr-2 bg-slate-800 border-b border-slate-700">
         <Breadcrumb navStack={navStack} onNavigate={handleNavigateTo} />
-        <ExportMenu
-          onExportJson={handleExportJson}
-          onImportJson={handleImportJson}
-          onExportPng={handleExportPng}
-          onExportSvg={handleExportSvg}
-        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleNewDrawing}
+            className="flex items-center gap-1.5 px-3 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
+            title="New drawing"
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+              <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8Z"/>
+            </svg>
+            New
+          </button>
+          <ExportMenu
+            onExportJson={handleExportJson}
+            onImportJson={handleImportJson}
+            onExportPng={handleExportPng}
+            onExportSvg={handleExportSvg}
+          />
+        </div>
       </div>
       <div className="flex flex-1 overflow-hidden">
         <Toolbar />

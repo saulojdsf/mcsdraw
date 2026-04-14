@@ -93,7 +93,7 @@ function Canvas({
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      type PosChange = { type: string; dragging?: boolean };
+      type PosChange = { type: string; id: string; dragging?: boolean; position?: { x: number; y: number } };
       const hasRemove = changes.some(c => c.type === 'remove');
       const hasDragStart = changes.some(c => c.type === 'position' && (c as PosChange).dragging === true && !isDragging.current);
       const hasDragEnd = changes.some(c => c.type === 'position' && (c as PosChange).dragging === false && isDragging.current);
@@ -103,9 +103,34 @@ function Canvas({
       }
       if (hasDragStart) isDragging.current = true;
       if (hasDragEnd) isDragging.current = false;
+
+      // When nodes are dragged, also move waypoints of selected edges whose both endpoints are being dragged
+      const draggingChanges = changes.filter(
+        c => c.type === 'position' && (c as PosChange).dragging === true && (c as PosChange).position != null
+      ) as (PosChange & { position: { x: number; y: number } })[];
+      if (draggingChanges.length > 0) {
+        const first = draggingChanges[0];
+        const currentNode = nodes.find(n => n.id === first.id);
+        if (currentNode && first.position) {
+          const dx = first.position.x - currentNode.position.x;
+          const dy = first.position.y - currentNode.position.y;
+          if (dx !== 0 || dy !== 0) {
+            const draggingNodeIds = new Set(draggingChanges.map(c => c.id));
+            setEdges(eds =>
+              eds.map(e => {
+                if (!e.selected || !e.data?.waypoints?.length) return e;
+                if (!draggingNodeIds.has(e.source) || !draggingNodeIds.has(e.target)) return e;
+                const waypoints = (e.data.waypoints as Waypoint[]).map(wp => ({ x: wp.x + dx, y: wp.y + dy }));
+                return { ...e, data: { ...e.data, waypoints } };
+              })
+            );
+          }
+        }
+      }
+
       onNodesChangeBase(changes);
     },
-    [onNodesChangeBase, nodes, edges]
+    [onNodesChangeBase, nodes, edges, setEdges]
   );
 
   const onEdgesChange = useCallback(
@@ -413,6 +438,13 @@ function Canvas({
         setNodes(nds =>
           nds.map(n => n.selected ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } } : n)
         );
+        setEdges(eds =>
+          eds.map(e => {
+            if (!e.selected || !e.data?.waypoints?.length) return e;
+            const waypoints = (e.data.waypoints as Waypoint[]).map(wp => ({ x: wp.x + dx, y: wp.y + dy }));
+            return { ...e, data: { ...e.data, waypoints } };
+          })
+        );
         return;
       }
 
@@ -443,7 +475,7 @@ function Canvas({
       window.removeEventListener('keydown', handler);
       window.removeEventListener('keyup', keyUpHandler);
     };
-  }, [handleUndo, handleRedo, handleCopy, handleCut, handlePaste, pushHistory, setNodes, onNavigateBack]);
+  }, [handleUndo, handleRedo, handleCopy, handleCut, handlePaste, pushHistory, setNodes, setEdges, onNavigateBack]);
 
   return (
     <EdgeUpdateContext.Provider value={handleUpdateEdgeWaypoints}>
